@@ -14,9 +14,9 @@ namespace TimeToAWS
         static async Task Main(string[] args)
         {
             // Bucket and credential information
-            string bucketName = "hrconnexuat.entomohr.sc.co";
-            string accessKey = "AKIA2CRIEJOMWLVTOA7Q";
-            string secretKey = "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";
+            string bucketName = "{bucketName}";
+            string accessKey = "{accessKey}";
+            string secretKey = "{secretKey}";
 
             // Generate a filename based on the current timestamp and date
             string currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
