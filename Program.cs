@@ -2,6 +2,7 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DotNetEnv;
 using System;
 using System.IO;
 using System.Text;
@@ -13,10 +14,12 @@ namespace TimeToAWS
     {
         static async Task Main(string[] args)
         {
+            Env.Load();
+
             // Bucket and credential information
-            string bucketName = "{bucketName}";
-            string accessKey = "{accessKey}";
-            string secretKey = "{secretKey}";
+            string bucketName = Env.GetString("BUCKET_NAME"); ;
+            string accessKey = Env.GetString("ACCESS_KEY"); ;
+            string secretKey = Env.GetString("SECRET_KEY"); ;
 
             // Generate a filename based on the current timestamp and date
             string currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
