@@ -29,14 +29,14 @@ namespace TimeToAWS
             long currentTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             keyName += $"{currentDate}/Mytimer_{currentTimeStamp}.txt";
 
+
+            LogMessage($"Start upload file to S3 {currentDate}\n");
+
             // Check if the file exists
             filePath += @"20241009.txt";
             if (!File.Exists(filePath))
             {
-                string message = $"Upload Time : {DateTime.Now}\n" +
-                                 $"Upload Status : Failed\n" +
-                                 $"Upload Description : File not found at {filePath}\n" +
-                                 "/**************************************************************************************/\n";
+                string message = GenerateUploadMessage(DateTime.Now, "Failed", $"File not found at {filePath}");
                 LogMessage(message);
                 Console.WriteLine(message);
                 return;
@@ -65,32 +65,36 @@ namespace TimeToAWS
 
                 // Upload the file to S3
                 var response = await s3Client.PutObjectAsync(putRequest);
-                string successMessage = $"Upload Time : {DateTime.Now}\n" +
-                                        $"Upload Status : Success\n" +
-                                        $"Upload Description : File uploaded successfully to {keyName}\n" +
-                                        "/**************************************************************************************/\n";
+                string successMessage = GenerateUploadMessage(DateTime.Now, "Success", $"File uploaded successfully to {keyName}");
                 LogMessage(successMessage);
                 Console.WriteLine(successMessage);
+
+                // Perform backup after successful upload
+                BackupFile(filePath);
+
                 Console.ReadKey();
             }
             catch (AmazonS3Exception ex)
             {
-                string errorMessage = $"Upload Time : {DateTime.Now}\n" +
-                                      $"Upload Status : Failed\n" +
-                                      $"Upload Description : AWS S3 Error: {ex.Message}\n" +
-                                      "/**************************************************************************************/\n";
-                LogMessage(errorMessage);
+                string generalError = GenerateUploadMessage(DateTime.Now, "Failed", $"AWS S3 Error: {ex.Message}");
+                LogMessage(generalError);
                 Console.ReadKey();
             }
             catch (Exception ex)
             {
-                string generalError = $"Upload Time : {DateTime.Now}\n" +
-                                      $"Upload Status : Failed\n" +
-                                      $"Upload Description : General Error: {ex.Message}\n" +
-                                      "/**************************************************************************************/\n";
+                string generalError = GenerateUploadMessage(DateTime.Now, "Failed", $"General Error: {ex.Message}");
                 LogMessage(generalError);
                 Console.ReadKey();
             }
+        }
+
+        // Function to generate upload messages
+        private static string GenerateUploadMessage(DateTime timestamp, string status, string description)
+        {
+            return $"Upload Time : {timestamp}\n" +
+                   $"Upload Status : {status}\n" +
+                   $"Upload Description : {description}\n" +
+                   "/**************************************************************************************/\n";
         }
 
         // Method to log messages to a file in the application directory
@@ -107,7 +111,43 @@ namespace TimeToAWS
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to write log: {ex.Message}");
+                string generalError = GenerateUploadMessage(DateTime.Now, "Failed", $"[LogMessage] General Error: {ex.Message}");
+                LogMessage(generalError);
+                Console.WriteLine(generalError);
+            }
+        }
+
+        // Method to back up the uploaded file to a "backup" folder in the application path
+        private static void BackupFile(string originalFilePath)
+        {
+            try
+            {
+                // Get the application's directory
+                string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+                // Create a "backup" folder if it doesn't exist
+                string backupFolderPath = Path.Combine(appPath, "backup");
+                if (!Directory.Exists(backupFolderPath))
+                {
+                    Directory.CreateDirectory(backupFolderPath);
+                }
+
+                // Copy the file to the backup folder with a timestamp in the name
+                string backupFileName = Path.GetFileName(originalFilePath);
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string backupFilePath = Path.Combine(backupFolderPath, $"{timestamp}_{backupFileName}");
+
+                File.Copy(originalFilePath, backupFilePath, overwrite: true);
+
+                string generalError = GenerateUploadMessage(DateTime.Now, "Success", $"[BackupFile] File successfully backed up to: {backupFilePath}");
+                LogMessage(generalError);
+                Console.WriteLine(generalError);
+            }
+            catch (Exception ex)
+            {
+                string generalError = GenerateUploadMessage(DateTime.Now, "Failed", $"[BackupFile] Failed to back up file: {ex.Message}");
+                LogMessage(generalError);
+                Console.WriteLine(generalError);
             }
         }
     }
