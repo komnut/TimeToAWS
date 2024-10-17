@@ -5,6 +5,7 @@ using Amazon.S3.Model;
 using DotNetEnv;
 using System;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -92,12 +93,16 @@ namespace TimeToAWS
             }
         }
 
-        // Method to log messages to a file
+        // Method to log messages to a file in the application directory
         private static void LogMessage(string message)
         {
-            string logFilePath = @"D:\LogPath\upload_log.txt";
             try
             {
+                // Get the path of the application's directory
+                string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string logFilePath = Path.Combine(appPath, "upload_log.txt");
+
+                // Append the message to the log file
                 File.AppendAllText(logFilePath, message);
             }
             catch (Exception ex)
