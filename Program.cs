@@ -17,20 +17,27 @@ namespace TimeToAWS
             Env.Load();
 
             // Bucket and credential information
-            string bucketName = Env.GetString("BUCKET_NAME"); ;
-            string accessKey = Env.GetString("ACCESS_KEY"); ;
-            string secretKey = Env.GetString("SECRET_KEY"); ;
+            string bucketName = Env.GetString("BUCKET_NAME"); 
+            string accessKey = Env.GetString("ACCESS_KEY"); 
+            string secretKey = Env.GetString("SECRET_KEY"); 
+            string keyName = Env.GetString("KEYNAME");
+            string filePath = Env.GetString("FILE_TIME_PATH");
 
             // Generate a filename based on the current timestamp and date
-            string currentDate = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            string currentDate = DateTime.UtcNow.ToString("yyyyMMdd");
             long currentTimeStamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            string keyName = $"example-domain/Org_Code/logType/Member_Id/{currentDate}/{currentTimeStamp}.log";
+            keyName += $"{currentDate}/Mytimer_{currentTimeStamp}.txt";
 
             // Check if the file exists
-            string filePath = @"D:\LogPath\20241009.txt";
+            filePath += @"20241009.txt";
             if (!File.Exists(filePath))
             {
-                Console.WriteLine("File not found at: " + filePath);
+                string message = $"Upload Time : {DateTime.Now}\n" +
+                                 $"Upload Status : Failed\n" +
+                                 $"Upload Description : File not found at {filePath}\n" +
+                                 "/**************************************************************************************/\n";
+                LogMessage(message);
+                Console.WriteLine(message);
                 return;
             }
 
@@ -55,40 +62,51 @@ namespace TimeToAWS
                     ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256, // AES256 encryption
                 };
 
-                // Add metadata for content encoding
-                //putRequest.Metadata.Add("x-amz-meta-content-encoding", "base64");
-
                 // Upload the file to S3
                 var response = await s3Client.PutObjectAsync(putRequest);
-                Console.WriteLine("Upload completed successfully!");
+                string successMessage = $"Upload Time : {DateTime.Now}\n" +
+                                        $"Upload Status : Success\n" +
+                                        $"Upload Description : File uploaded successfully to {keyName}\n" +
+                                        "/**************************************************************************************/\n";
+                LogMessage(successMessage);
+                Console.WriteLine(successMessage);
                 Console.ReadKey();
             }
             catch (AmazonS3Exception ex)
             {
-                Console.WriteLine($"AWS S3 Error: {ex.Message}");
+                string errorMessage = $"Upload Time : {DateTime.Now}\n" +
+                                      $"Upload Status : Failed\n" +
+                                      $"Upload Description : AWS S3 Error: {ex.Message}\n" +
+                                      "/**************************************************************************************/\n";
+                LogMessage(errorMessage);
                 Console.ReadKey();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error: {ex.Message}");
+                string generalError = $"Upload Time : {DateTime.Now}\n" +
+                                      $"Upload Status : Failed\n" +
+                                      $"Upload Description : General Error: {ex.Message}\n" +
+                                      "/**************************************************************************************/\n";
+                LogMessage(generalError);
                 Console.ReadKey();
+            }
+        }
+
+        // Method to log messages to a file
+        private static void LogMessage(string message)
+        {
+            string logFilePath = @"D:\LogPath\upload_log.txt";
+            try
+            {
+                File.AppendAllText(logFilePath, message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to write log: {ex.Message}");
             }
         }
     }
 }
-
-
-
-
-
-
-////Error encountered on server. Message:'User: arn:aws:iam::692647644057:user/hrconnex is not authorized to perform: s3:PutObject on resource: "arn:aws:s3:::hrconnexuat.entomohr.sc.co/your-file-name" because no identity-based policy allows the s3:PutObject action' when writing an object
-////Error encountered on server. Message:'User: arn:aws:iam::692647644057:user/hrconnex is not authorized to perform: s3:PutObject on resource: "arn:aws:s3:::hrconnexuat.entomohr.sc.co/20241009.txt" because no identity-based policy allows the s3:PutObject action' when writing an object
-////AWS S3 Error: User: arn: aws: iam::692647644057:user / hrconnex is not authorized to perform: s3: PutObject on resource: "arn:aws:s3:::hrconnexuat.entomohr.sc.co/example-domain/Org_Code/logType/Member_Id/2024-10-15/1728979480.log" because no identity-based policy allows the s3:PutObject action
-////AWS S3 Error: User: arn:aws:iam::692647644057:user/hrconnex is not authorized to perform: s3:PutObject on resource: "arn:aws:s3:::hrconnexuat.entomohr.sc.co/example-domain/Org_Code/logType/Member_Id/2024-10-15/1728979663.log" because no identity-based policy allows the s3:PutObject action
-////AWS S3 Error: User: arn:aws:iam::692647644057:user/hrconnex is not authorized to perform: s3:PutObject on resource: "arn:aws:s3:::hrconnexuat.entomohr.sc.co/example-domain/Org_Code/logType/Member_Id/2024-10-15/1728979757.log" because no identity-based policy allows the s3:PutObject action
-
-
 
 
 
